@@ -215,6 +215,45 @@
         }
         .modal-overlay.active { display: flex; }
         .modal-content { background: var(--bg-elevated); border: 1px solid var(--glass-border); padding: 40px; border-radius: 24px; width: 450px; position: relative;}
+
+        /* --- Mobile Responsiveness --- */
+        @media (max-width: 900px) {
+            body { padding: 0; }
+            .sidebar {
+                position: fixed; bottom: 0; left: 0; width: 100%; height: auto;
+                flex-direction: row; justify-content: space-around; padding: 12px 10px;
+                border-right: none; border-top: 1px solid var(--glass-border);
+                z-index: 1000; border-radius: 20px 20px 0 0; background: rgba(10, 10, 10, 0.9);
+                backdrop-filter: blur(20px);
+            }
+            .sidebar .logo, .sidebar div[style*="font-size: 11px"] { display: none; }
+            .nav-link { margin: 0; padding: 12px; border-radius: 14px; justify-content: center; flex: 1; border: none !important; }
+            .nav-link.active { background: rgba(255,255,255,0.05); color: var(--primary); border-radius: 14px; }
+            .nav-link.active i { color: var(--primary); }
+            .nav-link i { margin: 0; width: 22px; height: 22px; }
+            .nav-link span { display: none; }
+            
+            .main-content { padding: 20px 20px 100px; gap: 24px; }
+            .header-top { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .header-top h1 { font-size: 28px; }
+            
+            .portfolio-hero { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: 1fr; gap: 16px; }
+            
+            .card { padding: 24px; }
+            .value-amount { font-size: 42px; }
+            
+            /* Layout Adjustments */
+            #view-scanner > div { grid-template-columns: 1fr; gap: 20px; }
+            #view-settings > div { grid-template-columns: 1fr; gap: 20px; }
+            .asset-grid { grid-template-columns: 1fr; gap: 16px; }
+            
+            /* Modals */
+            .modal-content { width: 90%; max-width: 400px; padding: 24px; }
+            
+            /* Auth Overlay */
+            #auth-section .card { width: 90%; padding: 32px; }
+        }
     </style>
 </head>
 
@@ -248,14 +287,14 @@
         </div>
         
         <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 20px 0 10px 10px;">Portfolio</div>
-        <div class="nav-link active" onclick="switchTab('view-vault', this)"><i data-lucide="layout-dashboard"></i> Dashboard</div>
-        <div class="nav-link" onclick="switchTab('view-scanner', this)"><i data-lucide="scan-line"></i> Smart Scanner</div>
+        <div class="nav-link active" onclick="switchTab('view-vault', this)"><i data-lucide="layout-dashboard"></i> <span>Dashboard</span></div>
+        <div class="nav-link" onclick="switchTab('view-scanner', this)"><i data-lucide="scan-line"></i> <span>Smart Scanner</span></div>
         
         <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 30px 0 10px 10px;">Security</div>
-        <div class="nav-link" onclick="switchTab('view-nfc', this)"><i data-lucide="nfc"></i> NFC Handshake</div>
-        <div class="nav-link" onclick="switchTab('view-settings', this)"><i data-lucide="settings"></i> Vault Settings</div>
+        <div class="nav-link" onclick="switchTab('view-nfc', this)"><i data-lucide="nfc"></i> <span>NFC Handshake</span></div>
+        <div class="nav-link" onclick="switchTab('view-settings', this)"><i data-lucide="settings"></i> <span>Vault Settings</span></div>
         
-        <div class="nav-link" onclick="logout()" style="margin-top: auto; color: var(--danger);"><i data-lucide="log-out"></i> Secure Logout</div>
+        <div class="nav-link" onclick="logout()" style="margin-top: auto; color: var(--danger);"><i data-lucide="log-out"></i> <span>Secure Logout</span></div>
     </div>
 
     <!-- 💻 Main Content Area -->
