@@ -485,6 +485,39 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-content">
+            <button onclick="closeEditModal()" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-muted); cursor: pointer;"><i data-lucide="x"></i></button>
+            <h3 style="font-size: 24px; margin-bottom: 20px;">Edit Asset Details</h3>
+            <input type="hidden" id="edit-id">
+            <div class="input-group" style="text-align: left;">
+                <label>Asset Name / Model</label>
+                <input type="text" id="edit-name">
+            </div>
+            <div class="input-group" style="text-align: left;">
+                <label>Estimated Value ($)</label>
+                <input type="number" id="edit-value">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left;">
+                <div class="input-group"><label>Purchase Date</label><input type="date" id="edit-purchase"></div>
+                <div class="input-group"><label>Warranty Expiry</label><input type="date" id="edit-expiry"></div>
+            </div>
+            <button class="btn-primary" onclick="saveEdit()"><i data-lucide="save"></i> Save Changes</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="linkNfcModal">
+        <div class="modal-content" style="text-align: center;">
+            <button onclick="closeLinkModal()" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-muted); cursor: pointer;"><i data-lucide="x"></i></button>
+            <div style="width: 100px; height: 100px; border-radius: 50%; border: 2px solid rgba(56, 189, 248, 0.3); margin: 0 auto 30px; display: flex; align-items: center; justify-content: center; position: relative; animation: pulse-glow 2s infinite;">
+                <i data-lucide="nfc" style="width: 48px; height: 48px; color: var(--secondary);"></i>
+            </div>
+            <h3 style="font-size: 24px; margin-bottom: 10px;">Link Physical Tag</h3>
+            <p style="color: var(--text-muted); margin-bottom: 30px;" id="link-prompt">Hold your NFC-enabled device or blank tag near the reader to write the cryptographic birth certificate.</p>
+            <button class="btn-primary" id="btn-simulate-link" onclick="simulateTagWrite()">Simulate NFC Write</button>
+        </div>
+    </div>
+
     <!-- Application Logic -->
     <script>
         // Initialize Icons
@@ -586,7 +619,13 @@
                             <div style="width:6px; height:6px; border-radius:50%; background:${statusColor};"></div>
                             Warranty: ${p.expiry}
                         </div>
-                        <div style="display: flex; gap: 8px;">
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+                            <button onclick="openLinkModal('${p.id}', event)" style="background: rgba(56, 189, 248, 0.1); border: none; padding: 6px 12px; border-radius: 8px; color: var(--secondary); cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; transition: 0.2s;">
+                                <i data-lucide="link" style="width: 14px;"></i> Link
+                            </button>
+                            <button onclick="openEditModal('${p.id}', event)" style="background: rgba(255,255,255,0.1); border: none; padding: 6px 12px; border-radius: 8px; color: white; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; transition: 0.2s;">
+                                <i data-lucide="edit-2" style="width: 14px;"></i> Edit
+                            </button>
                             <button onclick="removeProduct('${p.id}', event)" style="background: rgba(239, 68, 68, 0.1); border: none; padding: 6px 12px; border-radius: 8px; color: var(--danger); cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; transition: 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.2)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.1)'">
                                 <i data-lucide="trash-2" style="width: 14px;"></i> Delete
                             </button>
@@ -700,6 +739,71 @@
             all = all.filter(p => p.id !== id);
             DB.set('products', all);
             loadProducts();
+        }
+
+        // --- Edit Asset ---
+        function openEditModal(id, event) {
+            event.stopPropagation();
+            const p = products.find(x => x.id === id);
+            if(!p) return;
+            document.getElementById('edit-id').value = p.id;
+            document.getElementById('edit-name').value = p.name;
+            document.getElementById('edit-value').value = p.value || 0;
+            document.getElementById('edit-purchase').value = p.purchase;
+            document.getElementById('edit-expiry').value = p.expiry;
+            document.getElementById('editModal').classList.add('active');
+        }
+        function closeEditModal() { document.getElementById('editModal').classList.remove('active'); }
+        function saveEdit() {
+            const id = document.getElementById('edit-id').value;
+            let all = DB.get('products');
+            const idx = all.findIndex(p => p.id === id);
+            if(idx === -1) return;
+            
+            all[idx].name = document.getElementById('edit-name').value;
+            all[idx].value = document.getElementById('edit-value').value;
+            all[idx].purchase = document.getElementById('edit-purchase').value;
+            all[idx].expiry = document.getElementById('edit-expiry').value;
+            
+            DB.set('products', all);
+            closeEditModal();
+            loadProducts();
+            alert("Asset details updated successfully.");
+        }
+
+        // --- Link NFC Tag ---
+        let linkTargetId = null;
+        function openLinkModal(id, event) {
+            event.stopPropagation();
+            linkTargetId = id;
+            document.getElementById('link-prompt').innerText = "Hold your NFC-enabled device or blank tag near the reader to write the cryptographic birth certificate.";
+            document.getElementById('btn-simulate-link').style.display = 'inline-block';
+            document.getElementById('linkNfcModal').classList.add('active');
+        }
+        function closeLinkModal() { document.getElementById('linkNfcModal').classList.remove('active'); }
+        function simulateTagWrite() {
+            const btn = document.getElementById('btn-simulate-link');
+            btn.innerHTML = `<i data-lucide="loader" class="spin"></i> Writing...`;
+            lucide.createIcons();
+            
+            setTimeout(() => {
+                let all = DB.get('products');
+                const idx = all.findIndex(p => p.id === linkTargetId);
+                if(idx !== -1) {
+                    all[idx].uid = 'NFC-' + Math.random().toString(16).substr(2,8).toUpperCase();
+                    DB.set('products', all);
+                    loadProducts();
+                }
+                
+                btn.style.display = 'none';
+                document.getElementById('link-prompt').innerHTML = `<span style="color:var(--success); font-weight: 600; font-size: 18px;"><i data-lucide="check-circle"></i> Successfully Linked!</span><br><br>The physical tag is now paired with this asset's digital twin.`;
+                lucide.createIcons();
+                
+                setTimeout(() => {
+                    closeLinkModal();
+                    btn.innerHTML = 'Simulate NFC Write';
+                }, 2500);
+            }, 1500);
         }
 
         // --- Hardware & Vision Features ---
