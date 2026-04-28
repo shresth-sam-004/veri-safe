@@ -9,8 +9,9 @@
     <!-- Modern Typography -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- External Libraries: OCR & Professional Icons -->
+    <!-- External Libraries: OCR, PDF Parsing & Professional Icons -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
@@ -377,12 +378,12 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; margin-top: 20px;">
                 <!-- AI Dropzone -->
                 <div class="card" style="text-align: center; padding: 60px 40px; cursor: pointer; border: 2px dashed var(--glass-border-highlight);" onclick="document.getElementById('receiptUpload').click()" id="dropzone">
-                    <input type="file" id="receiptUpload" style="display:none" onchange="runOCR()">
+                    <input type="file" id="receiptUpload" accept="image/*,application/pdf" style="display:none" onchange="runOCR()">
                     <div style="width: 80px; height: 80px; background: rgba(99,102,241,0.1); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
                         <i data-lucide="scan" style="width: 40px; height: 40px;"></i>
                     </div>
                     <h3 style="font-size: 22px; margin-bottom: 10px;">Upload Document</h3>
-                    <p style="color: var(--text-muted); line-height: 1.6;">Tap here to upload a receipt. Our Neural Engine will automatically extract the metadata.</p>
+                    <p style="color: var(--text-muted); line-height: 1.6;">Tap here to upload an image or PDF receipt. Our Neural Engine will automatically extract the metadata.</p>
                     <div id="ocrResult" style="margin-top: 30px; font-family: monospace; font-size: 12px; color: var(--secondary); background: var(--bg-base); padding: 15px; border-radius: 12px; display: none; text-align: left; max-height: 150px; overflow-y: auto; border: 1px solid var(--glass-border);"></div>
                 </div>
 
@@ -879,12 +880,26 @@
             
             dropzone.style.borderColor = 'var(--primary)';
             resultBox.style.display = 'block';
-            resultBox.innerHTML = "<div style='display:flex; gap:10px; align-items:center;'><i data-lucide='loader'></i> Initializing Neural Engine...</div>";
+            resultBox.innerHTML = "<div style='display:flex; gap:10px; align-items:center;'><i data-lucide='loader'></i> Processing Document...</div>";
             lucide.createIcons();
 
             try {
-                const res = await Tesseract.recognize(file, 'eng');
-                const text = res.data.text;
+                let text = '';
+                
+                if (file.type === 'application/pdf') {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+                    
+                    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+                    const pdf = await loadingTask.promise;
+                    const page = await pdf.getPage(1);
+                    const textContent = await page.getTextContent();
+                    text = textContent.items.map(item => item.str).join('\n');
+                } else {
+                    const res = await Tesseract.recognize(file, 'eng');
+                    text = res.data.text;
+                }
                 
                 resultBox.innerHTML = `<strong>Extracted Text:</strong><br>${text.substring(0, 300)}...`;
                 
@@ -898,12 +913,13 @@
                 if(dateMatch) document.getElementById('prodPurchase').value = dateMatch[0].split(/[\/\-]/).reverse().join('-');
                 
                 // Look for prices
-                const priceMatch = text.match(/\$?\d{1,3}(,\d{3})*(\.\d{2})/);
-                if(priceMatch) document.getElementById('prodValue').value = priceMatch[0].replace('$','').replace(',','');
+                const priceMatch = text.match(/(?:₹|\$)?\d{1,3}(,\d{3})*(\.\d{2})/);
+                if(priceMatch) document.getElementById('prodValue').value = priceMatch[0].replace(/[\$₹,]/g,'');
                 
                 dropzone.style.borderColor = 'var(--success)';
             } catch(e) {
-                resultBox.innerHTML = "<span style='color:var(--danger)'>Neural processing failed. Please enter manually.</span>";
+                console.error(e);
+                resultBox.innerHTML = "<span style='color:var(--danger)'>Processing failed. Please enter manually.</span>";
             }
         }
 
