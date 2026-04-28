@@ -280,7 +280,7 @@
                         <span style="color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 1px; font-size: 13px;">Total Vault Value</span>
                         <span style="padding: 4px 10px; background: rgba(16, 185, 129, 0.1); color: var(--success); border-radius: 20px; font-size: 12px; font-weight: 600;">+2.4% this month</span>
                     </div>
-                    <div class="value-amount" id="total-value-display">$0.00</div>
+                    <div class="value-amount" id="total-value-display">₹0.00</div>
                     <div style="display: flex; gap: 20px; margin-top: 20px;">
                         <div>
                             <div style="color: var(--text-muted); font-size: 12px;">Protected Assets</div>
@@ -355,8 +355,8 @@
                         <input type="text" id="prodName" placeholder="e.g. MacBook Pro M3 Max">
                     </div>
                     <div class="input-group">
-                        <label>Estimated Value ($)</label>
-                        <input type="number" id="prodValue" placeholder="3499.00">
+                        <label>Estimated Value (₹)</label>
+                        <input type="number" id="prodValue" placeholder="120000">
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                         <div class="input-group"><label>Purchase Date</label><input type="date" id="prodPurchase"></div>
@@ -495,7 +495,7 @@
                 <input type="text" id="edit-name">
             </div>
             <div class="input-group" style="text-align: left;">
-                <label>Estimated Value ($)</label>
+                <label>Estimated Value (₹)</label>
                 <input type="number" id="edit-value">
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left;">
@@ -602,7 +602,7 @@
             list.innerHTML = products.map((p, i) => {
                 const isExpiringSoon = new Date(p.expiry) < new Date(new Date().setMonth(new Date().getMonth() + 1));
                 const statusColor = isExpiringSoon ? 'var(--accent)' : 'var(--success)';
-                const formattedPrice = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(p.value || 0);
+                const formattedPrice = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(p.value || 0);
                 
                 return `
                 <div class="asset-card" style="animation-delay: ${i * 0.1}s">
@@ -645,7 +645,7 @@
             const totalValue = products.reduce((sum, p) => sum + (parseFloat(p.value) || 0), 0);
             
             // Format currency
-            const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+            const formatter = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' });
             
             // Animate Number
             const valueDisplay = document.getElementById('total-value-display');
