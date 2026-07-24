@@ -950,11 +950,17 @@
                 <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">This simulates a real
                     customer tapping their product's NFC tag on their phone — it reloads the page exactly like a real
                     tag redirect would, so you can demo the full flow end-to-end.</p>
-                <div style="display:flex; gap:16px; flex-wrap:wrap;">
-                    <button class="btn-primary" style="width:auto;" onclick="simulateTagScan('suresh')"><i
-                            data-lucide="package"></i> Scan: Suresh Iyer — Washing Machine</button>
-                    <button class="btn-primary" style="width:auto; background:var(--secondary);"
-                        onclick="simulateTagScan('karan')"><i data-lucide="tv"></i> Scan: Karan Verma — Sony TV</button>
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
+                    <button class="btn-primary" style="width:auto; font-size:13px;" onclick="simulateTagScan('suresh')"><i data-lucide="washing-machine"></i> Suresh — Washing Machine</button>
+                    <button class="btn-primary" style="width:auto; font-size:13px; background:var(--secondary);" onclick="simulateTagScan('karan')"><i data-lucide="tv"></i> Karan — Sony TV</button>
+                    <button class="btn-primary" style="width:auto; font-size:13px; background:linear-gradient(135deg,#7c3aed,#4f46e5);" onclick="simulateTagScan('priya')"><i data-lucide="thermometer-snowflake"></i> Priya — Refrigerator</button>
+                    <button class="btn-primary" style="width:auto; font-size:13px; background:linear-gradient(135deg,#0891b2,#0e7490);" onclick="simulateTagScan('arjun')"><i data-lucide="wind"></i> Arjun — Daikin AC</button>
+                    <button class="btn-primary" style="width:auto; font-size:13px; background:linear-gradient(135deg,#dc2626,#b91c1c);" onclick="simulateTagScan('riya')"><i data-lucide="laptop"></i> Riya — Dell Laptop</button>
+                    <button class="btn-primary" style="width:auto; font-size:13px; background:linear-gradient(135deg,#d97706,#b45309);" onclick="simulateTagScan('vikram')"><i data-lucide="bike"></i> Vikram — Pulsar 150</button>
+                    <button class="btn-primary" style="width:auto; font-size:13px; background:linear-gradient(135deg,#059669,#047857);" onclick="simulateTagScan('ananya')"><i data-lucide="coffee"></i> Ananya — Mixer Grinder</button>
+                    <button class="btn-primary" style="width:auto; font-size:13px; background:linear-gradient(135deg,#7c2d12,#9a3412);" onclick="simulateTagScan('rohit')"><i data-lucide="droplets"></i> Rohit — Water Heater</button>
+                    <button class="btn-primary" style="width:auto; font-size:13px; background:linear-gradient(135deg,#1d4ed8,#1e40af);" onclick="simulateTagScan('meena')"><i data-lucide="printer"></i> Meena — HP Printer</button>
+                    <button class="btn-primary" style="width:auto; font-size:13px; background:linear-gradient(135deg,#6d28d9,#7c3aed);" onclick="simulateTagScan('tarun')"><i data-lucide="microwave"></i> Tarun — Microwave</button>
                 </div>
             </div>
 
@@ -1270,6 +1276,7 @@
                 item: "Whirlpool Front Load Washing Machine 7kg", model: "WHIRL-FL7-2024",
                 serial: "SN-WM-33098S", purchaseDate: "2025-01-15",
                 warrantyEnd: "2027-01-14", warrantyNote: "24 months (Motor: 10 years)",
+                value: 38000,
                 part: {
                     partName: "Drain Pump Motor",
                     oldPartNumber: "PN-WHIRL-PUMP-7A", oldInstallDate: "2025-01-15 (factory fitted)",
@@ -1278,7 +1285,7 @@
                     newPartNumber: "PN-WHIRL-PUMP-7A-R2", newInstallDate: "2026-06-05",
                     technicianId: "TECH-2244", serviceTicket: "SVC-2026-003390",
                     newWarrantyStart: "2026-06-05", newWarrantyEnd: "2027-06-04",
-                    syncStatus: "SYNCED - Old part record archived, new part record linked to Serial Number SN-WM-33098S"
+                    syncStatus: "SYNCED"
                 }
             },
             karan: {
@@ -1286,6 +1293,7 @@
                 item: 'Sony Bravia 43" LED TV', model: "SONY-BRV-43-LED",
                 serial: "SN-TV-90441K", purchaseDate: "2025-11-05",
                 warrantyEnd: "2027-11-04", warrantyNote: "24 months",
+                value: 52000,
                 part: {
                     partName: "Main Display Panel",
                     oldPartNumber: "PN-SONY-PANEL-43A", oldInstallDate: "2025-11-05 (factory fitted)",
@@ -1294,7 +1302,103 @@
                     newPartNumber: "PN-SONY-PANEL-43B-R2", newInstallDate: "2026-06-20",
                     technicianId: "TECH-3321", serviceTicket: "SVC-2026-004471",
                     newWarrantyStart: "2026-06-20", newWarrantyEnd: "2027-06-19",
-                    syncStatus: "SYNCED - Old part record archived, new part record linked to Serial Number SN-TV-90441K"
+                    syncStatus: "SYNCED"
+                }
+            },
+            priya: {
+                customerName: "Priya Sharma", customerId: "CUST-1012",
+                item: "LG Double Door Refrigerator 260L", model: "LG-GN-B262SLBB",
+                serial: "SN-RF-77541P", purchaseDate: "2024-08-20",
+                warrantyEnd: "2025-08-19", warrantyNote: "12 months (Compressor: 10 years)",
+                value: 32000
+            },
+            arjun: {
+                customerName: "Arjun Mehta", customerId: "CUST-1019",
+                item: "Daikin 1.5 Ton 5-Star Inverter AC", model: "DAIKIN-MTKL50U",
+                serial: "SN-AC-54820A", purchaseDate: "2025-04-10",
+                warrantyEnd: "2030-04-09", warrantyNote: "5 years comprehensive",
+                value: 45000,
+                part: {
+                    partName: "PCB Control Board",
+                    oldPartNumber: "PN-DAIKIN-PCB-01", oldInstallDate: "2025-04-10 (factory fitted)",
+                    oldWarrantyInfo: "Covered under 5-year comprehensive warranty",
+                    failureReportedOn: "2026-05-18", replacementReason: "Unit not cooling / error code E3",
+                    newPartNumber: "PN-DAIKIN-PCB-02-R1", newInstallDate: "2026-05-22",
+                    technicianId: "TECH-4410", serviceTicket: "SVC-2026-005812",
+                    newWarrantyStart: "2026-05-22", newWarrantyEnd: "2027-05-21",
+                    syncStatus: "SYNCED"
+                }
+            },
+            riya: {
+                customerName: "Riya Nair", customerId: "CUST-1031",
+                item: "Dell Inspiron 15 3000 Laptop", model: "DELL-INS15-3511",
+                serial: "SN-LP-22916R", purchaseDate: "2025-06-01",
+                warrantyEnd: "2026-05-31", warrantyNote: "12 months (On-site)",
+                value: 58000
+            },
+            vikram: {
+                customerName: "Vikram Singh", customerId: "CUST-1008",
+                item: "Bajaj Pulsar 150 Motorcycle", model: "BAJAJ-PUL150-2024",
+                serial: "SN-VH-MD2DHJCZZRWJ4521", purchaseDate: "2024-12-05",
+                warrantyEnd: "2026-12-04", warrantyNote: "24 months / 30,000 km",
+                value: 115000,
+                part: {
+                    partName: "Rear Brake Caliper",
+                    oldPartNumber: "PN-BAJ-BRKC-R01", oldInstallDate: "2024-12-05 (factory fitted)",
+                    oldWarrantyInfo: "Covered under 24-month vehicle warranty",
+                    failureReportedOn: "2026-07-01", replacementReason: "Brake drag / overheating",
+                    newPartNumber: "PN-BAJ-BRKC-R02", newInstallDate: "2026-07-08",
+                    technicianId: "TECH-5521", serviceTicket: "SVC-2026-007110",
+                    newWarrantyStart: "2026-07-08", newWarrantyEnd: "2027-07-07",
+                    syncStatus: "SYNCED"
+                }
+            },
+            ananya: {
+                customerName: "Ananya Bose", customerId: "CUST-1044",
+                item: "Philips HL7756 750W Mixer Grinder", model: "PHILIPS-HL7756",
+                serial: "SN-MG-98812B", purchaseDate: "2025-03-18",
+                warrantyEnd: "2027-03-17", warrantyNote: "24 months",
+                value: 4500
+            },
+            rohit: {
+                customerName: "Rohit Gupta", customerId: "CUST-1055",
+                item: "Racold Eterno 2 25L Water Heater", model: "RACOLD-ETN2-25L",
+                serial: "SN-WH-44319G", purchaseDate: "2025-09-10",
+                warrantyEnd: "2030-09-09", warrantyNote: "5 years (tank: 7 years)",
+                value: 12000,
+                part: {
+                    partName: "Heating Element",
+                    oldPartNumber: "PN-RACOLD-HE-01", oldInstallDate: "2025-09-10 (factory fitted)",
+                    oldWarrantyInfo: "Covered under 5-year warranty",
+                    failureReportedOn: "2026-06-28", replacementReason: "No hot water / element burnt out",
+                    newPartNumber: "PN-RACOLD-HE-02-R1", newInstallDate: "2026-07-03",
+                    technicianId: "TECH-6602", serviceTicket: "SVC-2026-008230",
+                    newWarrantyStart: "2026-07-03", newWarrantyEnd: "2027-07-02",
+                    syncStatus: "SYNCED"
+                }
+            },
+            meena: {
+                customerName: "Meena Pillai", customerId: "CUST-1067",
+                item: "HP DeskJet 2331 All-in-One Printer", model: "HP-DJ-2331",
+                serial: "SN-PR-66120M", purchaseDate: "2025-07-22",
+                warrantyEnd: "2026-07-21", warrantyNote: "12 months",
+                value: 6500
+            },
+            tarun: {
+                customerName: "Tarun Kapoor", customerId: "CUST-1078",
+                item: "Samsung 28L Convection Microwave", model: "SAMSUNG-MC28H5025VK",
+                serial: "SN-MW-55673T", purchaseDate: "2024-11-14",
+                warrantyEnd: "2025-11-13", warrantyNote: "12 months (Magnetron: 10 years)",
+                value: 18000,
+                part: {
+                    partName: "Magnetron Tube",
+                    oldPartNumber: "PN-SAM-MAG-28A", oldInstallDate: "2024-11-14 (factory fitted)",
+                    oldWarrantyInfo: "Covered under 10-year magnetron warranty",
+                    failureReportedOn: "2026-07-10", replacementReason: "No heating / magnetron failure",
+                    newPartNumber: "PN-SAM-MAG-28A-R1", newInstallDate: "2026-07-15",
+                    technicianId: "TECH-7733", serviceTicket: "SVC-2026-009445",
+                    newWarrantyStart: "2026-07-15", newWarrantyEnd: "2034-07-14",
+                    syncStatus: "SYNCED"
                 }
             }
         };
