@@ -1364,25 +1364,6 @@
             }
         };
 
-        function simulateTagScan(key) {
-            const url = location.origin + location.pathname + '?nfc=' + key;
-            location.href = url; // exactly what really scanning the tag would do
-        }
-
-        function renderNfcTagUrls() {
-            const box = document.getElementById('nfc-tag-urls');
-            if (!box) return;
-            box.innerHTML = Object.entries(DEMO_NFC_PAYLOADS).map(([key, d]) => {
-                const url = location.origin + location.pathname + '?nfc=' + key;
-                return `<div>
-                    <div style="font-family:'Outfit',sans-serif; font-size:12px; color:var(--text-muted); margin-bottom:4px;">${d.customerName} — ${d.item} (Short 144-byte format)</div>
-                    <div style="display:flex; gap:8px; align-items:center;">
-                        <input readonly value="${url}" style="flex:1; font-size:11px; background:var(--bg-base); border:1px solid var(--glass-border); border-radius:8px; padding:8px;" onclick="this.select()">
-                        <button onclick="navigator.clipboard.writeText('${url}'); this.innerText='Copied!'; setTimeout(()=>this.innerText='Copy',1500)" style="background: var(--surface-3); border:none; color:white; padding:8px 12px; border-radius:8px; cursor:pointer; font-family:'Outfit',sans-serif; font-size:12px;">Copy</button>
-                    </div>
-                </div>`;
-            }).join('');
-        }
 
         // Captures ?nfc=... from the URL on page load, before login state is known
         function captureNfcParamFromUrl() {
@@ -1762,7 +1743,6 @@ JSON Schema:
                 document.getElementById('prodExpiry').valueAsDate = nextYear;
 
                 loadProducts();
-                renderNfcTagUrls();
                 processPendingNfc();
             } else {
                 showPendingNfcBanner();
@@ -2068,11 +2048,6 @@ JSON Schema:
             lucide.createIcons();
         }
 
-        function simulateRandomNFC() {
-            if (products.length === 0) return showToast("No items in vault to sync.", "warning");
-            const p = products[Math.floor(Math.random() * products.length)];
-            verifyNFC(p.id);
-        }
 
         function closeModal() { document.getElementById('nfcModal').classList.remove('active'); }
 
