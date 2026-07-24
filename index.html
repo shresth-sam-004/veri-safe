@@ -2338,9 +2338,67 @@ JSON Schema:
         }
 
         function sendAiChip(el) {
-            const text = el.textContent;
-            document.getElementById('ai-chat-input').value = text;
+            document.getElementById('ai-chat-input').value = el.textContent;
             sendAiMessage();
+        }
+
+        // ── Local vault answers for the 5 quick chips (no API needed) ──
+        function answerLocally(q) {
+            const user = DB ? DB.user() : null;
+            if (!user) return null;
+            const all = DB.get('products');
+            const mine = all.filter(p => p.owner === user.u);
+            if (!mine.length) return "Your vault is empty — scan an NFC tag to add your first product.";
+            const now = new Date();
+
+            const lq = q.toLowerCase();
+
+            if (lq.includes('expires soonest') || lq.includes('expire soonest')) {
+                const active = mine.filter(p => new Date(p.expiry) >= now).sort((a, b) => new Date(a.expiry) - new Date(b.expiry));
+                if (!active.length) return "All your warranties have already expired.";
+                const p = active[0];
+                const days = Math.round((new Date(p.expiry) - now) / 86400000);
+                return `📅 The warranty expiring soonest is:\n\n**${p.name}** — expires on **${p.expiry}** (${days} days left)\nOwner: ${p.customerName || user.u} · Serial: ${p.serial}`;
+            }
+
+            if (lq.includes('expired')) {
+                const expired = mine.filter(p => new Date(p.expiry) < now);
+                if (!expired.length) return "✅ Great news — none of your warranties have expired yet!";
+                return `⚠️ You have **${expired.length} expired** warranty/warranties:\n\n${expired.map(p => `• ${p.name} — expired ${p.expiry}`).join('\n')}`;
+            }
+
+            if (lq.includes('repair') || lq.includes('part replacement') || lq.includes('summarise') || lq.includes('summarize') || lq.includes('repair history')) {
+                const withParts = mine.filter(p => p.parts && p.parts.length);
+                if (!withParts.length) return "No repair or part replacement records found in your vault.";
+                return `🔧 **Repair History Summary** (${withParts.length} product${withParts.length > 1 ? 's' : ''}):\n\n${withParts.map(p => {
+                    return `**${p.name}:**\n${p.parts.map(pt => `  • ${pt.partName} replaced on ${pt.newInstallDate}\n    Ticket: ${pt.serviceTicket} | Tech: ${pt.technicianId}\n    New warranty until: ${pt.newWarrantyEnd}`).join('\n')}`;
+                }).join('\n\n')}`;
+            }
+
+            if (lq.includes('total value') || lq.includes('value of')) {
+                const total = mine.reduce((s, p) => s + (p.value || 0), 0);
+                return `💰 **Total insured asset value: ₹${total.toLocaleString('en-IN')}**\n\nBreakdown:\n${mine.filter(p => p.value).map(p => `• ${p.name}: ₹${(p.value).toLocaleString('en-IN')}`).join('\n')}`;
+            }
+
+            if (lq.includes('part replacement') || lq.includes('have part') || lq.includes('have parts')) {
+                const withParts = mine.filter(p => p.parts && p.parts.length);
+                if (!withParts.length) return "None of your products have part replacement records yet.";
+                return `🔩 **Products with part replacements (${withParts.length}):**\n\n${withParts.map(p => `• ${p.name} — ${p.parts.length} replacement(s)`).join('\n')}`;
+            }
+
+            return null; // not a local question
+        }
+
+        // ── Smart local fallback (used when API fails) ──
+        function smartLocalFallback(q) {
+            const user = DB ? DB.user() : null;
+            if (!user) return "Please log in to access your warranty vault.";
+            const all = DB.get('products');
+            const mine = all.filter(p => p.owner === user.u);
+            const now = new Date();
+            const active = mine.filter(p => new Date(p.expiry) >= now).length;
+            const total = mine.reduce((s, p) => s + (p.value || 0), 0);
+            return `Your vault has **${mine.length} product${mine.length !== 1 ? 's' : ''}** — ${active} with active warranties, total value ₹${total.toLocaleString('en-IN')}. For detailed analysis, please try again in a moment.`;
         }
 
         async function sendAiMessage() {
@@ -2353,69 +2411,63 @@ JSON Schema:
             aiChatHistory.push({ role: 'user', parts: [{ text }] });
             showTyping();
 
-            // Try to get keys — first localStorage, then fresh from /api/keys
-            let geminiKey = localStorage.getItem('vs_gemini_key');
-            let groqKey = localStorage.getItem('vs_groq_key');
+            // 1. Try local answer first (chips + common questions)
+            const local = answerLocally(text);
+            if (local) {
+                await new Promise(r => setTimeout(r, 400)); // feel like it's thinking
+                removeTyping();
+                appendAiMessage('bot', local);
+                aiChatHistory.push({ role: 'model', parts: [{ text: local }] });
+                return;
+            }
 
-            if (!geminiKey && !groqKey) {
+            // 2. Load API keys
+            let groqKey = localStorage.getItem('vs_groq_key');
+            if (!groqKey) {
                 try {
                     const kr = await fetch('/api/keys');
                     if (kr.ok) {
                         const kd = await kr.json();
-                        if (kd.gemini) { geminiKey = kd.gemini; localStorage.setItem('vs_gemini_key', geminiKey); }
-                        if (kd.groq)   { groqKey   = kd.groq;   localStorage.setItem('vs_groq_key',   groqKey);   }
+                        if (kd.groq) { groqKey = kd.groq; localStorage.setItem('vs_groq_key', groqKey); }
                     }
                 } catch (_) {}
             }
 
-            if (!geminiKey && !groqKey) {
-                removeTyping();
-                appendAiMessage('bot', '⚠️ No API key found. Add your Gemini or Groq key in Vault Settings.');
-                return;
-            }
-
-            const vaultContext = buildVaultContext();
-            const systemPrompt = `You are VeriSafe AI, an intelligent warranty assistant. You have full access to the user's warranty vault. Be concise, helpful and conversational. Today's date is ${new Date().toISOString().split('T')[0]}.
-
-User's warranty vault:
----
-${vaultContext}
----
-Answer questions based only on this data.`;
-
-            // Groq only
-            if (!groqKey) {
-                removeTyping();
-                appendAiMessage('bot', '⚠️ No Groq API key found. Add it in Vault Settings.');
-                return;
-            }
-
-            try {
-                const msgs = [
-                    { role: 'system', content: systemPrompt },
-                    ...aiChatHistory.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.parts[0].text }))
-                ];
-                const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
-                    body: JSON.stringify({ model: 'llama3-8b-8192', messages: msgs, temperature: 0.7, max_tokens: 512 })
-                });
-                const json = await res.json();
-                if (json.error) throw new Error(json.error.message);
-                const reply = json.choices?.[0]?.message?.content;
-                if (reply) {
-                    removeTyping();
-                    appendAiMessage('bot', reply);
-                    aiChatHistory.push({ role: 'model', parts: [{ text: reply }] });
-                    return;
+            // 3. Try Groq
+            if (groqKey) {
+                const models = ['llama-3.1-8b-instant', 'llama3-8b-8192', 'gemma2-9b-it'];
+                for (const model of models) {
+                    try {
+                        const msgs = [
+                            { role: 'system', content: `You are VeriSafe AI, a warranty assistant. Be concise and helpful. Today: ${new Date().toISOString().split('T')[0]}.\n\nVault data:\n${buildVaultContext()}` },
+                            ...aiChatHistory.slice(0, -1).map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.parts[0].text })),
+                            { role: 'user', content: text }
+                        ];
+                        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
+                            body: JSON.stringify({ model, messages: msgs, temperature: 0.7, max_tokens: 400 })
+                        });
+                        const json = await res.json();
+                        if (json.error) throw new Error(json.error.message);
+                        const reply = json.choices?.[0]?.message?.content;
+                        if (reply) {
+                            removeTyping();
+                            appendAiMessage('bot', reply);
+                            aiChatHistory.push({ role: 'model', parts: [{ text: reply }] });
+                            return;
+                        }
+                    } catch (e) {
+                        console.warn(`Model ${model} failed:`, e.message);
+                    }
                 }
-            } catch (e) {
-                removeTyping();
-                appendAiMessage('bot', `❌ AI error: ${e.message}`);
             }
 
+            // 4. Smart local fallback — never show an error to the user
             removeTyping();
-            appendAiMessage('bot', '❌ Could not get a response. Check API keys in Settings.');
+            const fallback = smartLocalFallback(text);
+            appendAiMessage('bot', fallback);
+            aiChatHistory.push({ role: 'model', parts: [{ text: fallback }] });
         }
     </script>
 </body>
