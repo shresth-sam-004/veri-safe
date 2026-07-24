@@ -1656,9 +1656,24 @@ JSON Schema:
             }
         }
 
-        function initApp() {
+        // Fetch API keys from Vercel /api/keys endpoint (env vars), fall back to localStorage for local dev
+        async function fetchAndStoreApiKeys() {
+            try {
+                const res = await fetch('/api/keys');
+                if (res.ok) {
+                    const keys = await res.json();
+                    if (keys.gemini) localStorage.setItem('vs_gemini_key', keys.gemini);
+                    if (keys.groq) localStorage.setItem('vs_groq_key', keys.groq);
+                }
+            } catch (e) {
+                // Running locally without the serverless function — keys already in localStorage from Settings
+            }
+        }
+
+        async function initApp() {
             seedDemoUsers();
             captureNfcParamFromUrl();
+            await fetchAndStoreApiKeys();
             loadGeminiKey();
             loadGroqKey();
             const user = DB.user();
