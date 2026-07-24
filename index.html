@@ -2383,58 +2383,35 @@ ${vaultContext}
 ---
 Answer questions based only on this data.`;
 
-            // Try Groq first (reliable)
-            if (groqKey) {
-                try {
-                    const msgs = [
-                        { role: 'system', content: systemPrompt },
-                        ...aiChatHistory.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.parts[0].text }))
-                    ];
-                    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
-                        body: JSON.stringify({ model: 'llama3-8b-8192', messages: msgs, temperature: 0.7, max_tokens: 512 })
-                    });
-                    const json = await res.json();
-                    if (json.error) throw new Error(json.error.message);
-                    const reply = json.choices?.[0]?.message?.content;
-                    if (reply) {
-                        removeTyping();
-                        appendAiMessage('bot', reply);
-                        aiChatHistory.push({ role: 'model', parts: [{ text: reply }] });
-                        return;
-                    }
-                } catch (e) {
-                    console.warn('Groq failed, trying Gemini:', e.message);
-                }
+            // Groq only
+            if (!groqKey) {
+                removeTyping();
+                appendAiMessage('bot', '⚠️ No Groq API key found. Add it in Vault Settings.');
+                return;
             }
 
-            // Gemini fallback
-            if (geminiKey) {
-                try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            system_instruction: { parts: [{ text: systemPrompt }] },
-                            contents: aiChatHistory,
-                            generationConfig: { temperature: 0.7, maxOutputTokens: 512 }
-                        })
-                    });
-                    const json = await res.json();
-                    if (json.error) throw new Error(json.error.message);
-                    const reply = json.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (reply) {
-                        removeTyping();
-                        appendAiMessage('bot', reply);
-                        aiChatHistory.push({ role: 'model', parts: [{ text: reply }] });
-                        return;
-                    }
-                } catch (e) {
+            try {
+                const msgs = [
+                    { role: 'system', content: systemPrompt },
+                    ...aiChatHistory.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.parts[0].text }))
+                ];
+                const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
+                    body: JSON.stringify({ model: 'llama3-8b-8192', messages: msgs, temperature: 0.7, max_tokens: 512 })
+                });
+                const json = await res.json();
+                if (json.error) throw new Error(json.error.message);
+                const reply = json.choices?.[0]?.message?.content;
+                if (reply) {
                     removeTyping();
-                    appendAiMessage('bot', `❌ AI error: ${e.message}`);
+                    appendAiMessage('bot', reply);
+                    aiChatHistory.push({ role: 'model', parts: [{ text: reply }] });
                     return;
                 }
+            } catch (e) {
+                removeTyping();
+                appendAiMessage('bot', `❌ AI error: ${e.message}`);
             }
 
             removeTyping();
