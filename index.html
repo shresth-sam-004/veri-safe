@@ -2383,33 +2383,7 @@ ${vaultContext}
 ---
 Answer questions based only on this data.`;
 
-            // Try Gemini first
-            if (geminiKey) {
-                try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            system_instruction: { parts: [{ text: systemPrompt }] },
-                            contents: aiChatHistory,
-                            generationConfig: { temperature: 0.7, maxOutputTokens: 512 }
-                        })
-                    });
-                    const json = await res.json();
-                    if (json.error) throw new Error(json.error.message);
-                    const reply = json.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (reply) {
-                        removeTyping();
-                        appendAiMessage('bot', reply);
-                        aiChatHistory.push({ role: 'model', parts: [{ text: reply }] });
-                        return;
-                    }
-                } catch (e) {
-                    console.warn('Gemini failed, trying Groq:', e.message);
-                }
-            }
-
-            // Groq fallback
+            // Try Groq first (reliable)
             if (groqKey) {
                 try {
                     const msgs = [
@@ -2431,7 +2405,32 @@ Answer questions based only on this data.`;
                         return;
                     }
                 } catch (e) {
-                    console.error('Groq also failed:', e.message);
+                    console.warn('Groq failed, trying Gemini:', e.message);
+                }
+            }
+
+            // Gemini fallback
+            if (geminiKey) {
+                try {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            system_instruction: { parts: [{ text: systemPrompt }] },
+                            contents: aiChatHistory,
+                            generationConfig: { temperature: 0.7, maxOutputTokens: 512 }
+                        })
+                    });
+                    const json = await res.json();
+                    if (json.error) throw new Error(json.error.message);
+                    const reply = json.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (reply) {
+                        removeTyping();
+                        appendAiMessage('bot', reply);
+                        aiChatHistory.push({ role: 'model', parts: [{ text: reply }] });
+                        return;
+                    }
+                } catch (e) {
                     removeTyping();
                     appendAiMessage('bot', `❌ AI error: ${e.message}`);
                     return;
