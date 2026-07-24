@@ -960,8 +960,10 @@
 
             <div class="card" style="margin-top: 30px;">
                 <h3 style="margin-bottom: 8px; font-size: 18px;">Write These URLs to Real NFC Tags</h3>
-                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">Use the free "NFC Tools" app
-                    (Android/iOS) → Write → Add a record → URL/URI → paste the link below → Write.</p>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 8px;">Use the free <strong style="color:var(--secondary);">NFC Tools</strong> app (Android/iOS) → Write → Add a record → URL/URI → paste the link below → Write.</p>
+                <p style="color: var(--text-muted); font-size: 12px; margin-bottom: 20px; padding: 10px; background: var(--surface-2); border-radius: 8px; border-left: 3px solid var(--secondary);">
+                    <strong>💡 144-byte tag limit solved:</strong> Instead of embedding full product data on the tag, these URLs use a short lookup key (e.g. <code style="background:var(--bg-base); padding:2px 6px; border-radius:4px;">?nfc=suresh</code>). When scanned, the app resolves the key against the built-in demo product database — so no data is on the chip at all, only a tiny URL.
+                </p>
                 <div id="nfc-tag-urls"
                     style="display:flex; flex-direction:column; gap:12px; font-family: monospace; font-size: 11px;">
                 </div>
@@ -1065,13 +1067,22 @@
                 <div class="card" style="grid-column: span 2;">
                     <h3
                         style="margin-bottom: 24px; font-size: 18px; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px;">
-                        AI Tag Processor (Groq Integration)</h3>
-                    <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 13px;">If a scanned NFC tag contains unstructured metadata or a custom text layout, VeriSafe will route the tag's raw payload to Groq's high-speed Llama-3 model to dynamically classify, structure, and add the product to your wallet.</p>
-                    <div class="input-group" style="margin-bottom: 0;">
-                        <label>Groq API Key</label>
-                        <div style="display: flex; gap: 12px;">
-                            <input type="password" id="groq-api-key" placeholder="gsk_..." style="flex: 1;">
-                            <button class="btn-primary" onclick="saveGroqKey()" style="width: auto; padding: 16px 24px;"><i data-lucide="save"></i> Save Key</button>
+                        AI Tag Processor (Gemini & Groq Integrations)</h3>
+                    <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 13px;">If a scanned NFC tag contains unstructured metadata or a custom text layout, VeriSafe will route the tag's raw payload to Gemini (or Groq as a backup) to dynamically classify, structure, and add the product to your wallet.</p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label>Gemini API Key</label>
+                            <div style="display: flex; gap: 12px;">
+                                <input type="password" id="gemini-api-key" placeholder="AIzaSy..." style="flex: 1;">
+                                <button class="btn-primary" onclick="saveGeminiKey()" style="width: auto; padding: 16px 24px;"><i data-lucide="save"></i> Save</button>
+                            </div>
+                        </div>
+                        <div class="input-group" style="margin-bottom: 0;">
+                            <label>Groq API Key</label>
+                            <div style="display: flex; gap: 12px;">
+                                <input type="password" id="groq-api-key" placeholder="gsk_..." style="flex: 1;">
+                                <button class="btn-primary" onclick="saveGroqKey()" style="width: auto; padding: 16px 24px;"><i data-lucide="save"></i> Save</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1289,7 +1300,7 @@
         };
 
         function simulateTagScan(key) {
-            const url = location.origin + location.pathname + '?nfc=' + b64urlEncode(DEMO_NFC_PAYLOADS[key]);
+            const url = location.origin + location.pathname + '?nfc=' + key;
             location.href = url; // exactly what really scanning the tag would do
         }
 
@@ -1297,9 +1308,9 @@
             const box = document.getElementById('nfc-tag-urls');
             if (!box) return;
             box.innerHTML = Object.entries(DEMO_NFC_PAYLOADS).map(([key, d]) => {
-                const url = location.origin + location.pathname + '?nfc=' + b64urlEncode(d);
+                const url = location.origin + location.pathname + '?nfc=' + key;
                 return `<div>
-                    <div style="font-family:'Outfit',sans-serif; font-size:12px; color:var(--text-muted); margin-bottom:4px;">${d.customerName} — ${d.item}</div>
+                    <div style="font-family:'Outfit',sans-serif; font-size:12px; color:var(--text-muted); margin-bottom:4px;">${d.customerName} — ${d.item} (Short 144-byte format)</div>
                     <div style="display:flex; gap:8px; align-items:center;">
                         <input readonly value="${url}" style="flex:1; font-size:11px; background:var(--bg-base); border:1px solid var(--glass-border); border-radius:8px; padding:8px;" onclick="this.select()">
                         <button onclick="navigator.clipboard.writeText('${url}'); this.innerText='Copied!'; setTimeout(()=>this.innerText='Copy',1500)" style="background: var(--surface-3); border:none; color:white; padding:8px 12px; border-radius:8px; cursor:pointer; font-family:'Outfit',sans-serif; font-size:12px;">Copy</button>
@@ -1313,18 +1324,26 @@
             const params = new URLSearchParams(location.search);
             const raw = params.get('nfc');
             if (!raw) return;
-            try {
-                const payload = b64urlDecode(raw);
-                if (payload && payload.item) {
-                    sessionStorage.setItem('vs_pending_nfc', JSON.stringify(payload));
-                    sessionStorage.removeItem('vs_pending_nfc_raw');
-                } else {
+
+            // Check if it's a short demo key to resolve under the 144-byte tag limit!
+            if (DEMO_NFC_PAYLOADS[raw.toLowerCase()]) {
+                const payload = DEMO_NFC_PAYLOADS[raw.toLowerCase()];
+                sessionStorage.setItem('vs_pending_nfc', JSON.stringify(payload));
+                sessionStorage.removeItem('vs_pending_nfc_raw');
+            } else {
+                try {
+                    const payload = b64urlDecode(raw);
+                    if (payload && payload.item) {
+                        sessionStorage.setItem('vs_pending_nfc', JSON.stringify(payload));
+                        sessionStorage.removeItem('vs_pending_nfc_raw');
+                    } else {
+                        sessionStorage.setItem('vs_pending_nfc_raw', raw);
+                        sessionStorage.removeItem('vs_pending_nfc');
+                    }
+                } catch (e) {
                     sessionStorage.setItem('vs_pending_nfc_raw', raw);
                     sessionStorage.removeItem('vs_pending_nfc');
                 }
-            } catch (e) {
-                sessionStorage.setItem('vs_pending_nfc_raw', raw);
-                sessionStorage.removeItem('vs_pending_nfc');
             }
             // Clean the URL so refreshing/sharing doesn't re-trigger it oddly
             history.replaceState(null, '', location.pathname);
@@ -1418,6 +1437,59 @@
             DB.set('products', all);
         }
 
+        async function callGeminiAPI(rawText, apiKey) {
+            const systemPrompt = `You are a precise data extractor for VeriSafe, an IoT hardware warranty wallet.
+Your task is to analyze the unstructured raw NFC tag content and extract the product and warranty information.
+Return ONLY a valid JSON object matching the schema below. Do not wrap it in markdown tags or add any markdown formatting, code block markers, or commentary. Output clean, raw JSON.
+
+JSON Schema:
+{
+  "item": "Product Name/Model (Required)",
+  "model": "Model Number (if present)",
+  "serial": "Serial/Chassis/Unique ID (Required. If missing, generate a unique SN- string)",
+  "customerName": "Customer Name (if present)",
+  "customerId": "Customer ID (if present)",
+  "warrantyEnd": "Warranty Expiration Date in YYYY-MM-DD format (Calculate or extract. Default to 1 year from purchase if unspecified)",
+  "warrantyNote": "Duration details like '24 months' or '10 year motor warranty'",
+  "value": number (Estimated price in INR/USD. Default to 0 if unspecified),
+  "purchaseDate": "Purchase Date in YYYY-MM-DD format (Use current date YYYY-MM-DD if unspecified)",
+  "part": {
+     "partName": "Name of replaced component",
+     "oldPartNumber": "Old part serial/number",
+     "newPartNumber": "New part serial/number",
+     "newInstallDate": "Date of repair/replacement YYYY-MM-DD",
+     "newWarrantyEnd": "New component warranty expiration date YYYY-MM-DD",
+     "serviceTicket": "Ticket reference number",
+     "technicianId": "Technician ID",
+     "replacementReason": "Why it was replaced"
+  } (Include ONLY if there is clear evidence of a component replacement/repair record inside the raw content)
+}`;
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    contents: [
+                        { parts: [{ text: `${systemPrompt}\n\nRaw NFC Tag text payload:\n\n${rawText}` }] }
+                    ],
+                    generationConfig: {
+                        responseMimeType: "application/json"
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                const err = await response.text();
+                throw new Error(err);
+            }
+
+            const resJson = await response.json();
+            const content = resJson.candidates[0].content.parts[0].text.trim();
+            return JSON.parse(content);
+        }
+
         async function callGroqAPI(rawText, apiKey) {
             const systemPrompt = `You are a precise data extractor for VeriSafe, an IoT hardware warranty wallet.
 Your task is to analyze the unstructured raw NFC tag content and extract the product and warranty information.
@@ -1495,9 +1567,11 @@ JSON Schema:
                     }
                 }, 300);
             } else if (rawPending) {
-                const apiKey = localStorage.getItem('vs_groq_key');
-                if (!apiKey) {
-                    showToast("⚠️ Groq API Key required to analyze unstructured tag data. Configure in Settings.", "warning");
+                const geminiKey = localStorage.getItem('vs_gemini_key');
+                const groqKey = localStorage.getItem('vs_groq_key');
+                
+                if (!geminiKey && !groqKey) {
+                    showToast("⚠️ Gemini or Groq API Key required to analyze unstructured tag data. Configure in Settings.", "warning");
                     applyRawNfcFallback(rawPending, user.u);
                     sessionStorage.removeItem('vs_pending_nfc_raw');
                     loadProducts();
@@ -1505,10 +1579,16 @@ JSON Schema:
                     return;
                 }
 
-                showToast("🧠 Processing tag payload with Groq AI...", "info");
+                const useGemini = !!geminiKey;
+                showToast(useGemini ? "🧠 Processing tag payload with Gemini AI..." : "🧠 Processing tag payload with Groq AI...", "info");
                 
                 try {
-                    const parsedData = await callGroqAPI(rawPending, apiKey);
+                    let parsedData;
+                    if (useGemini) {
+                        parsedData = await callGeminiAPI(rawPending, geminiKey);
+                    } else {
+                        parsedData = await callGroqAPI(rawPending, groqKey);
+                    }
                     const isUpdate = applyNfcPayloadToWallet(parsedData, user.u);
                     sessionStorage.removeItem('vs_pending_nfc_raw');
                     loadProducts();
@@ -1522,14 +1602,26 @@ JSON Schema:
                         }
                     }, 300);
                 } catch (e) {
-                    console.error("Groq processing failed:", e);
-                    showToast("❌ Groq AI processing failed. Added as raw item.", "danger");
+                    console.error("AI processing failed:", e);
+                    showToast("❌ AI processing failed. Added as raw item.", "danger");
                     applyRawNfcFallback(rawPending, user.u);
                     sessionStorage.removeItem('vs_pending_nfc_raw');
                     loadProducts();
                     switchTab('view-vault', document.querySelectorAll('.nav-link')[0]);
                 }
             }
+        }
+
+        function saveGeminiKey() {
+            const val = document.getElementById('gemini-api-key').value;
+            localStorage.setItem('vs_gemini_key', val);
+            showToast("Gemini API Key saved successfully.", "success");
+        }
+
+        function loadGeminiKey() {
+            const val = localStorage.getItem('vs_gemini_key') || '';
+            const input = document.getElementById('gemini-api-key');
+            if (input) input.value = val;
         }
 
         function saveGroqKey() {
@@ -1567,6 +1659,7 @@ JSON Schema:
         function initApp() {
             seedDemoUsers();
             captureNfcParamFromUrl();
+            loadGeminiKey();
             loadGroqKey();
             const user = DB.user();
             if (user) {
