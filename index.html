@@ -1511,7 +1511,7 @@ JSON Schema:
   } (Include ONLY if there is clear evidence of a component replacement/repair record inside the raw content)
 }`;
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -2351,44 +2351,95 @@ JSON Schema:
 
             appendAiMessage('user', text);
             aiChatHistory.push({ role: 'user', parts: [{ text }] });
-
             showTyping();
 
-            const geminiKey = localStorage.getItem('vs_gemini_key');
-            if (!geminiKey) {
+            // Try to get keys — first localStorage, then fresh from /api/keys
+            let geminiKey = localStorage.getItem('vs_gemini_key');
+            let groqKey = localStorage.getItem('vs_groq_key');
+
+            if (!geminiKey && !groqKey) {
+                try {
+                    const kr = await fetch('/api/keys');
+                    if (kr.ok) {
+                        const kd = await kr.json();
+                        if (kd.gemini) { geminiKey = kd.gemini; localStorage.setItem('vs_gemini_key', geminiKey); }
+                        if (kd.groq)   { groqKey   = kd.groq;   localStorage.setItem('vs_groq_key',   groqKey);   }
+                    }
+                } catch (_) {}
+            }
+
+            if (!geminiKey && !groqKey) {
                 removeTyping();
-                appendAiMessage('bot', '⚠️ Gemini API key not loaded yet. Please wait a moment and try again, or add it in Settings.');
+                appendAiMessage('bot', '⚠️ No API key found. Add your Gemini or Groq key in Vault Settings.');
                 return;
             }
 
             const vaultContext = buildVaultContext();
-            const systemInstruction = `You are VeriSafe AI, an intelligent warranty assistant embedded in the VeriSafe app. You have full access to the user's warranty vault data. Be concise, helpful, and conversational. Use emojis sparingly. Format lists with line breaks. Today's date is ${new Date().toISOString().split('T')[0]}.
+            const systemPrompt = `You are VeriSafe AI, an intelligent warranty assistant. You have full access to the user's warranty vault. Be concise, helpful and conversational. Today's date is ${new Date().toISOString().split('T')[0]}.
 
-Here is the user's complete warranty vault:
+User's warranty vault:
 ---
 ${vaultContext}
 ---
-Answer questions based only on this data. If asked something outside the vault, politely clarify.`;
+Answer questions based only on this data.`;
 
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        system_instruction: { parts: [{ text: systemInstruction }] },
-                        contents: aiChatHistory,
-                        generationConfig: { temperature: 0.7, maxOutputTokens: 512 }
-                    })
-                });
-                const json = await res.json();
-                const reply = json.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not process that.';
-                removeTyping();
-                appendAiMessage('bot', reply);
-                aiChatHistory.push({ role: 'model', parts: [{ text: reply }] });
-            } catch (e) {
-                removeTyping();
-                appendAiMessage('bot', '❌ Something went wrong. Check your internet connection.');
+            // Try Gemini first
+            if (geminiKey) {
+                try {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            system_instruction: { parts: [{ text: systemPrompt }] },
+                            contents: aiChatHistory,
+                            generationConfig: { temperature: 0.7, maxOutputTokens: 512 }
+                        })
+                    });
+                    const json = await res.json();
+                    if (json.error) throw new Error(json.error.message);
+                    const reply = json.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (reply) {
+                        removeTyping();
+                        appendAiMessage('bot', reply);
+                        aiChatHistory.push({ role: 'model', parts: [{ text: reply }] });
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('Gemini failed, trying Groq:', e.message);
+                }
             }
+
+            // Groq fallback
+            if (groqKey) {
+                try {
+                    const msgs = [
+                        { role: 'system', content: systemPrompt },
+                        ...aiChatHistory.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.parts[0].text }))
+                    ];
+                    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
+                        body: JSON.stringify({ model: 'llama3-8b-8192', messages: msgs, temperature: 0.7, max_tokens: 512 })
+                    });
+                    const json = await res.json();
+                    if (json.error) throw new Error(json.error.message);
+                    const reply = json.choices?.[0]?.message?.content;
+                    if (reply) {
+                        removeTyping();
+                        appendAiMessage('bot', reply);
+                        aiChatHistory.push({ role: 'model', parts: [{ text: reply }] });
+                        return;
+                    }
+                } catch (e) {
+                    console.error('Groq also failed:', e.message);
+                    removeTyping();
+                    appendAiMessage('bot', `❌ AI error: ${e.message}`);
+                    return;
+                }
+            }
+
+            removeTyping();
+            appendAiMessage('bot', '❌ Could not get a response. Check API keys in Settings.');
         }
     </script>
 </body>
