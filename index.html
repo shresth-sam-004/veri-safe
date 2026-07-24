@@ -752,13 +752,7 @@
                 Create Vault
             </button>
 
-            <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--glass-border);">
-                <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Quick Demo Profiles</div>
-                <div style="display: flex; gap: 10px; justify-content: center;">
-                    <button class="btn-primary" onclick="quickLogin('suresh')" style="padding: 10px 14px; font-size: 12px; background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2); box-shadow: none; color: var(--primary); width: auto;">Suresh Iyer</button>
-                    <button class="btn-primary" onclick="quickLogin('karan')" style="padding: 10px 14px; font-size: 12px; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.2); box-shadow: none; color: var(--secondary); width: auto;">Karan Verma</button>
-                </div>
-            </div>
+
         </div>
     </div>
 
@@ -939,40 +933,7 @@
                     <i data-lucide="smartphone-nfc" style="width: 64px; height: 64px; color: var(--secondary);"></i>
                 </div>
                 <h2 style="font-size: 28px; margin-bottom: 16px;">Ready to Scan</h2>
-                <p style="color: var(--text-muted); margin-bottom: 40px; font-size: 16px;">Bring your mobile device or
-                    physical NFC tag close to the reader to establish a secure handshake.</p>
-                <button class="btn-primary" style="width: auto; padding: 16px 40px; margin: 0 auto;"
-                    onclick="simulateRandomNFC()">Simulate Tag Detection</button>
-            </div>
-
-            <div class="card" style="margin-top: 30px;">
-                <h3 style="margin-bottom: 8px; font-size: 18px;">Demo: Scan a Physical NFC Tag</h3>
-                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">This simulates a real
-                    customer tapping their product's NFC tag on their phone — it reloads the page exactly like a real
-                    tag redirect would, so you can demo the full flow end-to-end.</p>
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
-                    <button class="btn-primary" style="width:auto; font-size:13px;" onclick="simulateTagScan('suresh')"><i data-lucide="washing-machine"></i> Suresh — Washing Machine</button>
-                    <button class="btn-primary" style="width:auto; font-size:13px; background:var(--secondary);" onclick="simulateTagScan('karan')"><i data-lucide="tv"></i> Karan — Sony TV</button>
-                    <button class="btn-primary" style="width:auto; font-size:13px; background:linear-gradient(135deg,#7c3aed,#4f46e5);" onclick="simulateTagScan('priya')"><i data-lucide="thermometer-snowflake"></i> Priya — Refrigerator</button>
-                    <button class="btn-primary" style="width:auto; font-size:13px; background:linear-gradient(135deg,#0891b2,#0e7490);" onclick="simulateTagScan('arjun')"><i data-lucide="wind"></i> Arjun — Daikin AC</button>
-                    <button class="btn-primary" style="width:auto; font-size:13px; background:linear-gradient(135deg,#dc2626,#b91c1c);" onclick="simulateTagScan('riya')"><i data-lucide="laptop"></i> Riya — Dell Laptop</button>
-                    <button class="btn-primary" style="width:auto; font-size:13px; background:linear-gradient(135deg,#d97706,#b45309);" onclick="simulateTagScan('vikram')"><i data-lucide="bike"></i> Vikram — Pulsar 150</button>
-                    <button class="btn-primary" style="width:auto; font-size:13px; background:linear-gradient(135deg,#059669,#047857);" onclick="simulateTagScan('ananya')"><i data-lucide="coffee"></i> Ananya — Mixer Grinder</button>
-                    <button class="btn-primary" style="width:auto; font-size:13px; background:linear-gradient(135deg,#7c2d12,#9a3412);" onclick="simulateTagScan('rohit')"><i data-lucide="droplets"></i> Rohit — Water Heater</button>
-                    <button class="btn-primary" style="width:auto; font-size:13px; background:linear-gradient(135deg,#1d4ed8,#1e40af);" onclick="simulateTagScan('meena')"><i data-lucide="printer"></i> Meena — HP Printer</button>
-                    <button class="btn-primary" style="width:auto; font-size:13px; background:linear-gradient(135deg,#6d28d9,#7c3aed);" onclick="simulateTagScan('tarun')"><i data-lucide="microwave"></i> Tarun — Microwave</button>
-                </div>
-            </div>
-
-            <div class="card" style="margin-top: 30px;">
-                <h3 style="margin-bottom: 8px; font-size: 18px;">Write These URLs to Real NFC Tags</h3>
-                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 8px;">Use the free <strong style="color:var(--secondary);">NFC Tools</strong> app (Android/iOS) → Write → Add a record → URL/URI → paste the link below → Write.</p>
-                <p style="color: var(--text-muted); font-size: 12px; margin-bottom: 20px; padding: 10px; background: var(--surface-2); border-radius: 8px; border-left: 3px solid var(--secondary);">
-                    <strong>💡 144-byte tag limit solved:</strong> Instead of embedding full product data on the tag, these URLs use a short lookup key (e.g. <code style="background:var(--bg-base); padding:2px 6px; border-radius:4px;">?nfc=suresh</code>). When scanned, the app resolves the key against the built-in demo product database — so no data is on the chip at all, only a tiny URL.
-                </p>
-                <div id="nfc-tag-urls"
-                    style="display:flex; flex-direction:column; gap:12px; font-family: monospace; font-size: 11px;">
-                </div>
+                <p style="color: var(--text-muted); font-size: 16px;">Tap your registered NFC tag against your phone.<br>The product will be instantly verified and synced to your vault.</p>
             </div>
         </div>
 
@@ -1662,14 +1623,18 @@ JSON Schema:
                 const isUpdate = applyNfcPayloadToWallet(pending, user.u);
                 sessionStorage.removeItem('vs_pending_nfc');
                 loadProducts();
-                switchTab('view-vault', document.querySelectorAll('.nav-link')[0]);
+                const nfcNavLink = document.querySelector('.nav-link[onclick*="view-nfc"]');
+                switchTab('view-nfc', nfcNavLink || document.querySelectorAll('.nav-link')[2]);
+
+                // Find the product we just synced and show its certificate modal
                 setTimeout(() => {
-                    if (isUpdate) {
-                        showToast(`🔄 Re-scanned: "${pending.item}" details and part history are already synchronized.`, 'info');
-                    } else {
-                        showToast(`✅ Synced: "${pending.item}" has been added to your vault.`, 'success');
-                    }
-                }, 300);
+                    const all = DB.get('products');
+                    const synced = all.find(p => p.owner === user.u && p.serial === pending.serial);
+                    if (synced) verifyNFC(synced.id);
+                    showToast(isUpdate
+                        ? `🔄 Tag synced: "${pending.item}" — part history updated.`
+                        : `✅ "${pending.item}" has been added to your vault.`, 'success');
+                }, 350);
             } else if (rawPending) {
                 const geminiKey = localStorage.getItem('vs_gemini_key');
                 const groqKey = localStorage.getItem('vs_groq_key');
